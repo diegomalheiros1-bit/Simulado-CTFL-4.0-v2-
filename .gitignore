@@ -1,0 +1,6 @@
+screenshots/
+node_modules/
+__pycache__/
+*.pyc
+debug.log
+Simulado-Supremo-v2/

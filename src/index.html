@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>CTFL 4.0 - Simulador Completo (v3.7)</title>
+ <script>
+  (function applySavedTheme() {
+   try {
+    const savedTheme = localStorage.getItem('ctfl-simulator-theme');
+    document.documentElement.dataset.theme = savedTheme === 'light' ? 'light' : 'dark';
+   } catch (_error) {
+    document.documentElement.dataset.theme = 'dark';
+   }
+  })();
+ </script>
+ <script src="https://cdn.tailwindcss.com"></script>
+ <script src="https://unpkg.com/lucide@latest"></script>
+ <link rel="stylesheet" href="./css/main.css">
+</head>
+<body class="min-h-screen flex flex-col">
+
+ <header class="p-4 md:p-6 border-b border-slate-800 bg-slate-950/40 backdrop-blur-md sticky top-0 z-50">
+ <div class="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-4">
+ <div class="flex items-center gap-3 cursor-pointer" onclick="location.reload()">
+ <div class="bg-indigo-600 p-2 rounded-xl shadow-lg shadow-indigo-500/20"><i data-lucide="shield-check" class="text-white"></i></div>
+ <h1 class="text-xl font-black italic tracking-tighter uppercase">CTFL 4.0 <span class="text-indigo-500">MASTER</span></h1>
+ </div>
+
+ <nav id="primary-navigation" class="order-3 md:order-none w-full md:w-auto flex items-center gap-1 overflow-x-auto rounded-2xl border border-slate-800 bg-slate-900/55 p-1" aria-label="Navegação principal">
+ <button type="button" data-nav="home" class="nav-link active">Início</button>
+ <button type="button" data-nav="history" class="nav-link">Histórico</button>
+ <button type="button" data-nav="performance" class="nav-link">Desempenho</button>
+ <button type="button" data-nav="settings" class="nav-link">Configurações</button>
+ </nav>
+
+ <div class="flex gap-6 items-center">
+ <div id="timer-box" class="hidden flex items-center gap-2 bg-slate-800/50 px-4 py-2 rounded-lg border border-slate-700">
+ <i data-lucide="timer" class="w-4 h-4 text-slate-400"></i>
+ <span id="timer-display" class="font-mono font-bold text-xl text-white">00:00</span>
+ </div>
+
+ <div id="live-stats" class="hidden text-xs font-black uppercase tracking-widest text-slate-500 text-right">
+ Score: <span id="live-score" class="text-emerald-500 text-sm">0</span> <br>
+ <span id="live-idx">0</span>
+ </div>
+ </div>
+ </div>
+ </header>
+
+ <main class="flex-grow flex items-center justify-center p-4 md:p-6">
+ <div id="menu" class="max-w-7xl w-full py-8 md:py-10">
+ <div class="mb-8 md:mb-10">
+ <span class="text-xs font-black uppercase tracking-[0.24em] text-indigo-400">Painel de estudos</span>
+ <h2 class="text-3xl md:text-4xl font-black mt-2 mb-2 uppercase text-white tracking-tight">Preparatório CTFL 4.0</h2>
+ <p class="text-slate-400 max-w-2xl">Escolha um simulado e acompanhe sua evolução sem sair do navegador.</p>
+ </div>
+
+ <section class="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-5 mb-8" aria-label="Indicadores gerais">
+ <article class="metric-card">
+ <div class="metric-icon text-indigo-400 bg-indigo-500/10"><i data-lucide="clipboard-check"></i></div>
+ <div><p class="metric-label">Simulados realizados</p><p id="stat-total-attempts" class="metric-value">0</p></div>
+ </article>
+ <article class="metric-card">
+ <div class="metric-icon text-sky-400 bg-sky-500/10"><i data-lucide="gauge"></i></div>
+ <div><p class="metric-label">Média geral</p><p id="stat-average" class="metric-value">—</p></div>
+ </article>
+ <article class="metric-card">
+ <div class="metric-icon text-emerald-400 bg-emerald-500/10"><i data-lucide="trophy"></i></div>
+ <div><p class="metric-label">Melhor resultado</p><p id="stat-best" class="metric-value">—</p></div>
+ </article>
+ <article class="metric-card">
+ <div class="metric-icon text-amber-400 bg-amber-500/10"><i data-lucide="list-checks"></i></div>
+ <div><p class="metric-label">Questões respondidas</p><p id="stat-answered" class="metric-value">0</p></div>
+ </article>
+ </section>
+
+ <section class="grid gap-6 lg:grid-cols-3" aria-label="Simulados disponíveis">
+ <article class="card quiz-card rounded-[2rem] border-2 border-indigo-500/50 hover:border-indigo-400">
+ <div class="flex justify-between items-start gap-4">
+ <div class="bg-indigo-500/10 p-4 rounded-2xl text-indigo-500"><i data-lucide="award"></i></div>
+ <div class="flex flex-col items-end gap-2">
+ <span class="bg-indigo-500/20 text-indigo-400 text-[10px] font-black px-3 py-1 rounded-full uppercase">Oficial</span>
+ <span id="quiz-status-oficial" class="quiz-status status-empty">Não realizado</span>
+ </div>
+ </div>
+ <div class="mt-6 flex-grow">
+ <h3 class="text-2xl font-bold mb-2 text-white">Simulado Prova Oficial</h3>
+ <p class="text-sm text-slate-400">As 40 questões literais do exame oficial.</p>
+ </div>
+ <div class="quiz-meta">
+ <span><i data-lucide="list-checks"></i> 40 questões</span>
+ <span><i data-lucide="clock"></i> 60 min</span>
+ </div>
+ <div class="quiz-results">
+ <div><span>Melhor resultado</span><strong id="quiz-best-oficial">—</strong></div>
+ <div><span>Tentativas</span><strong id="quiz-attempts-oficial">0</strong></div>
+ </div>
+ <button id="quiz-action-oficial" onclick="start('oficial')" class="quiz-action bg-indigo-600 hover:bg-indigo-500">Iniciar simulado</button>
+ </article>
+
+ <article class="card quiz-card rounded-[2rem] hover:border-emerald-500">
+ <div class="flex justify-between items-start gap-4">
+ <div class="bg-emerald-500/10 p-4 rounded-2xl text-emerald-500"><i data-lucide="file-text"></i></div>
+ <div class="flex flex-col items-end gap-2">
+ <span class="bg-emerald-500/20 text-emerald-400 text-[10px] font-black px-3 py-1 rounded-full uppercase">Extras</span>
+ <span id="quiz-status-adicionais" class="quiz-status status-empty">Não realizado</span>
+ </div>
+ </div>
+ <div class="mt-6 flex-grow">
+ <h3 class="text-2xl font-bold mb-2 text-white">Questões Adicionais</h3>
+ <p class="text-sm text-slate-400">Questões adicionais oficiais do documento da CTFL.</p>
+ </div>
+ <div class="quiz-meta">
+ <span><i data-lucide="list-checks"></i> 26 questões</span>
+ <span><i data-lucide="clock"></i> 45 min</span>
+ </div>
+ <div class="quiz-results">
+ <div><span>Melhor resultado</span><strong id="quiz-best-adicionais">—</strong></div>
+ <div><span>Tentativas</span><strong id="quiz-attempts-adicionais">0</strong></div>
+ </div>
+ <button id="quiz-action-adicionais" onclick="start('adicionais')" class="quiz-action bg-emerald-600 hover:bg-emerald-500">Iniciar simulado</button>
+ </article>
+
+ <article class="card quiz-card rounded-[2rem] hover:border-amber-500">
+ <div class="flex justify-between items-start gap-4">
+ <div class="bg-amber-500/10 p-4 rounded-2xl text-amber-500"><i data-lucide="zap"></i></div>
+ <div class="flex flex-col items-end gap-2">
+ <span class="bg-amber-500/20 text-amber-400 text-[10px] font-black px-3 py-1 rounded-full uppercase">Técnico</span>
+ <span id="quiz-status-k2k3" class="quiz-status status-empty">Não realizado</span>
+ </div>
+ </div>
+ <div class="mt-6 flex-grow">
+ <h3 class="text-2xl font-bold mb-2 text-white">Cálculos K2 & K3</h3>
+ <p class="text-sm text-slate-400">Banco expandido com questões técnicas e revisão.</p>
+ </div>
+ <div class="quiz-meta">
+ <span><i data-lucide="list-checks"></i> 20 questões</span>
+ <span><i data-lucide="clock"></i> 40 min</span>
+ </div>
+ <div class="quiz-results">
+ <div><span>Melhor resultado</span><strong id="quiz-best-k2k3">—</strong></div>
+ <div><span>Tentativas</span><strong id="quiz-attempts-k2k3">0</strong></div>
+ </div>
+ <button id="quiz-action-k2k3" onclick="start('k2k3')" class="quiz-action bg-amber-600 hover:bg-amber-500">Iniciar simulado</button>
+ </article>
+ </section>
+ <footer class="home-signature" aria-label="Autoria do projeto">
+ <span>Desenvolvido por</span>
+ <strong>Diego Stanisci Malheiros</strong>
+ </footer>
+ </div>
+
+ <section id="history-view" class="hidden max-w-7xl w-full py-8 md:py-10">
+ <div class="flex flex-col md:flex-row md:items-end justify-between gap-5 mb-8">
+ <div>
+ <span class="text-xs font-black uppercase tracking-[0.24em] text-indigo-400">Sua evolução</span>
+ <h2 class="text-3xl md:text-4xl font-black mt-2 text-white tracking-tight">Histórico de Resultados</h2>
+ <p class="text-slate-400 mt-2">Resultados armazenados somente neste navegador.</p>
+ </div>
+ <button type="button" data-clear-history class="inline-flex items-center justify-center gap-2 rounded-xl border border-rose-500/40 bg-rose-950/20 px-4 py-3 text-sm font-black text-rose-300 hover:bg-rose-950/40">
+ <i data-lucide="trash-2" class="w-4 h-4"></i> Limpar histórico
+ </button>
+ </div>
+
+ <div class="dashboard-tabs mb-6">
+ <button id="tab-history" type="button" class="dashboard-tab active"><i data-lucide="history"></i> Histórico</button>
+ <button id="tab-performance" type="button" class="dashboard-tab"><i data-lucide="chart-no-axes-column-increasing"></i> Desempenho</button>
+ </div>
+
+ <div id="history-panel">
+ <div class="card rounded-3xl p-5 md:p-6">
+ <div class="flex flex-col sm:flex-row gap-4 mb-6">
+ <label class="filter-field">
+ <span>Filtrar por simulado</span>
+ <select id="history-filter">
+ <option value="all">Todos os simulados</option>
+ <option value="oficial">Prova Oficial</option>
+ <option value="adicionais">Questões Adicionais</option>
+ <option value="k2k3">Cálculos K2 & K3</option>
+ </select>
+ </label>
+ <label class="filter-field">
+ <span>Ordenar</span>
+ <select id="history-order">
+ <option value="recent">Mais recentes</option>
+ <option value="oldest">Mais antigos</option>
+ </select>
+ </label>
+ </div>
+ <div id="history-empty" class="empty-state">
+ <i data-lucide="inbox"></i>
+ <h3>Nenhum resultado encontrado</h3>
+ <p>Finalize um simulado para acompanhar seu histórico.</p>
+ </div>
+ <div id="history-table-wrap" class="hidden overflow-x-auto rounded-2xl border border-slate-700/70">
+ <table class="w-full min-w-[760px] text-sm text-left">
+ <thead class="bg-slate-950/55 text-[10px] uppercase tracking-widest text-slate-400">
+ <tr>
+ <th class="px-4 py-4">Data</th>
+ <th class="px-4 py-4">Simulado</th>
+ <th class="px-4 py-4">Resultado</th>
+ <th class="px-4 py-4">Acertos</th>
+ <th class="px-4 py-4">Total</th>
+ <th class="px-4 py-4">Situação</th>
+ </tr>
+ </thead>
+ <tbody id="history-body" class="bg-slate-900/25"></tbody>
+ </table>
+ </div>
+ </div>
+ </div>
+
+ <div id="performance-panel" class="hidden">
+ <section class="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-5 mb-6">
+ <article class="metric-card"><div><p class="metric-label">Média geral</p><p id="performance-average" class="metric-value">—</p></div></article>
+ <article class="metric-card"><div><p class="metric-label">Melhor resultado</p><p id="performance-best" class="metric-value">—</p></div></article>
+ <article class="metric-card"><div><p class="metric-label">Taxa de aprovação</p><p id="performance-approval" class="metric-value">—</p></div></article>
+ <article class="metric-card"><div><p class="metric-label">Tentativas totais</p><p id="performance-total" class="metric-value">0</p></div></article>
+ </section>
+ <section class="card rounded-3xl p-6 md:p-8">
+ <h3 class="text-xl font-black text-white mb-6">Desempenho por simulado</h3>
+ <div class="space-y-6">
+ <div class="performance-row">
+ <div><span>Prova Oficial</span><strong id="performance-oficial-value">—</strong></div>
+ <div class="performance-track"><div id="performance-oficial-bar" class="performance-bar bg-indigo-500"></div></div>
+ </div>
+ <div class="performance-row">
+ <div><span>Questões Adicionais</span><strong id="performance-adicionais-value">—</strong></div>
+ <div class="performance-track"><div id="performance-adicionais-bar" class="performance-bar bg-emerald-500"></div></div>
+ </div>
+ <div class="performance-row">
+ <div><span>Cálculos K2 & K3</span><strong id="performance-k2k3-value">—</strong></div>
+ <div class="performance-track"><div id="performance-k2k3-bar" class="performance-bar bg-amber-500"></div></div>
+ </div>
+ </div>
+ </section>
+ </div>
+ </section>
+
+ <section id="settings-view" class="hidden max-w-4xl w-full py-8 md:py-10">
+ <div class="mb-8">
+ <span class="text-xs font-black uppercase tracking-[0.24em] text-indigo-400">Preferências locais</span>
+ <h2 class="text-3xl md:text-4xl font-black mt-2 text-white tracking-tight">Configurações</h2>
+ </div>
+ <div class="card rounded-3xl p-6 md:p-8">
+ <section class="theme-settings mb-6" aria-labelledby="theme-settings-title">
+ <div>
+ <h3 id="theme-settings-title" class="font-black text-white">Tema da página</h3>
+ <p class="text-sm text-slate-400 mt-1">Escolha a aparência que prefere usar neste navegador.</p>
+ </div>
+ <div class="theme-options mt-4" role="radiogroup" aria-label="Tema da página">
+ <button type="button" class="theme-option" data-theme-option="dark" role="radio" aria-checked="true">
+ <span class="theme-option-icon"><i data-lucide="moon"></i></span>
+ <span><strong>Escuro</strong><small>Visual atual, ideal para ambientes com pouca luz.</small></span>
+ <i data-lucide="check" class="theme-option-check"></i>
+ </button>
+ <button type="button" class="theme-option" data-theme-option="light" role="radio" aria-checked="false">
+ <span class="theme-option-icon"><i data-lucide="sun"></i></span>
+ <span><strong>Claro</strong><small>Fundo claro e contraste confortável durante o dia.</small></span>
+ <i data-lucide="check" class="theme-option-check"></i>
+ </button>
+ </div>
+ </section>
+ <div class="flex items-start gap-4 rounded-2xl border border-indigo-500/25 bg-indigo-950/20 p-5 mb-6">
+ <i data-lucide="hard-drive" class="w-6 h-6 text-indigo-400 shrink-0"></i>
+ <div>
+ <h3 class="font-black text-white">Dados armazenados localmente</h3>
+ <p class="text-sm text-slate-400 mt-1">Seu histórico fica salvo apenas neste navegador. Não existe conta, login ou sincronização em nuvem.</p>
+ </div>
+ </div>
+ <div class="grid gap-4">
+ <button type="button" data-clear-history class="settings-action">
+ <i data-lucide="trash-2" class="text-rose-400"></i>
+ <span><strong>Limpar histórico</strong><small>Remove todas as tentativas registradas.</small></span>
+ </button>
+ </div>
+ </div>
+ </section>
+
+ <div id="quiz" class="max-w-3xl w-full hidden py-10">
+ <div class="progress-container">
+ <div id="progress-bar"></div>
+ </div>
+
+ <div id="q-container" class="card p-10 rounded-[2.5rem] shadow-2xl relative">
+ <div id="q-tag" class="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-4"></div>
+ <div id="q-text" class="text-lg font-semibold mb-3 text-white leading-snug"></div>
+ <div id="opts" class="grid gap-3"></div>
+ <div id="feedback" class="hidden mt-8 p-6 bg-slate-950/40 rounded-2xl border border-indigo-500/30">
+ <p id="f-text" class="text-sm italic text-slate-300"></p>
+ </div>
+ </div>
+ <button id="next-btn" onclick="check()" class="w-full mt-8 bg-indigo-600 text-white py-6 rounded-3xl font-black hover:bg-white hover:text-indigo-900 transition-all uppercase tracking-widest shadow-xl shadow-indigo-500/20">Confirmar Resposta</button>
+ </div>
+ </main>
+
+
+ <script src="./data/questions-oficial.js"></script>
+ <script src="./data/questions-adicionais.js"></script>
+ <script src="./data/questions-k2k3.js"></script>
+ <script src="./js/quiz-engine.js"></script>
+ <script src="./js/storage.js"></script>
+ <script src="./js/dashboard.js"></script>
+ <script src="./js/app.js"></script>
+</body>
+</html>
