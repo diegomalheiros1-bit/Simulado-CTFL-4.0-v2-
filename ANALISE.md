@@ -1,95 +1,46 @@
-﻿# Analise Atual do Projeto (Status Atual)
+# Análise atual do projeto
 
 ## Resumo executivo
 
-O projeto esta funcional, organizado em estrutura modular (`src/index.html`, `src/js/app.js`, `src/data/`) e com correcoes recentes aplicadas nas questoes oficiais com layout especial.
+O Simulado CTFL 4.0 V2 está organizado em módulos independentes, com quatro bancos de questões, painel de resultados, temas claro e escuro e persistência local. A versão atual corresponde ao ciclo 3.8.
 
-Estado geral hoje:
+## Bancos de questões
 
-- simulador roda normalmente
-- base oficial, adicionais e k2k3 carregam corretamente
-- questoes com tabela/diagrama especial estao com render customizado
-- correcoes recentes ja foram publicadas no remoto
+- `oficial`: 40 questões.
+- `adicionais`: 26 questões.
+- `k2k3`: 20 questões.
+- `exameB`: 40 questões do Exame de Amostra Set B.
 
-## Escopo de dados (banco de questoes)
+Cada banco possui arquivo próprio em `src/data/`, evitando acoplamento entre conteúdos. O Exame B aceita respostas múltiplas com comparação exata do conjunto selecionado.
 
-Contagem atual:
+## Interface e lógica
 
-- `oficial`: 40 questoes
-- `adicionais`: 26 questoes
-- `k2k3`: 20 questoes
+- `src/index.html`: menu, navegação, simulados e painéis.
+- `src/css/main.css`: layout responsivo, temas e componentes visuais.
+- `src/js/app.js`: fluxo das questões, timer, pontuação e renderizações especiais.
+- `src/js/quiz-engine.js`: avaliação de respostas simples e múltiplas.
+- `src/js/storage.js`: histórico local, incluindo armazenamento separado do Exame B.
+- `src/js/dashboard.js`: indicadores, histórico, desempenho e configurações.
 
-Arquivo principal de dados:
+## Melhorias da versão 3.8
 
-- `src/data/questions-oficial.js` (40 questoes oficiais)
-- `src/data/questions-adicionais.js` (26 questoes adicionais)
-- `src/data/questions-k2k3.js` (20 questoes K2 e K3)
+1. Inclusão do Exame B completo, com 40 questões e integração ao painel.
+2. Renderização isolada de tabelas, diagramas, blocos de código e cenários do Exame B.
+3. Correção das questões 22 e 23 para impedir a injeção de recursos visuais legados.
+4. Pontuação exata para questões de múltiplas respostas, incluindo a questão 26.
+5. Remoção de texto instrucional duplicado da alternativa E da questão 26.
+6. Botão de pausa e retomada do timer, mantendo o tempo restante.
+7. Melhoria do contraste do botão de confirmação no tema claro.
+8. Persistência e indicadores de desempenho do Exame B.
 
-## Escopo de interface e logica
+## Validação
 
-Arquivos principais:
+- Verificação de sintaxe dos arquivos JavaScript.
+- Bateria Playwright em cenários positivo e negativo para os quatro bancos.
+- 252 questões respondidas durante a bateria completa.
+- Auditoria de textos renderizados e geração de relatório em `screenshots/bateria-3.8/`.
+- Capturas finais das questões 22, 23 e 28 do Exame B mantidas como evidência visual da versão.
 
-- `src/index.html` (estrutura da pagina e menu)
-- `src/js/app.js` (renderizacao, fluxo de prova, correcoes especificas por questao)
-- `src/js/quiz-engine.js` (regras de avaliacao)
+## Estado atual
 
-A aplicacao possui tratamentos especiais no `app.js` para questoes que exigem layout fora do padrao.
-
-## Melhorias recentes aplicadas
-
-Ja implementado e publicado:
-
-1. Questao 23:
-- recuperacao da exibicao do diagrama no enunciado
-
-2. Questao 21:
-- render com tabelas de faixas e casos de teste no formato esperado
-
-3. Questao 22:
-- render com tabela de decisao completa (condicoes, acoes e marcacoes)
-- lista de recursos em bullets
-
-4. Questao 14:
-- render com tabela de execucoes (TC1, TC2, TC3 x Execucao 1, 2, 3)
-
-5. Texto/encoding:
-- houve normalizacao de varios trechos para reduzir problemas de texto quebrado
-
-## Commits recentes relevantes
-
-- `4ad7cf2` Ajusta layout da questao 14 com tabela de execucao
-- `26f1489` Ajusta layout das questoes oficiais 21-23 e corrige exibicao de midias
-
-## Validacoes executadas
-
-- validacao de sintaxe do `src/js/app.js` via `node` (ok)
-- navegacao automatizada para captura de evidencias visuais das questoes ajustadas
-- regressao visual com captura de 40 telas da base oficial
-
-## Riscos e pendencias atuais
-
-1. Encoding ainda heterogeneo em partes do projeto:
-- ainda existem trechos com caracteres exibidos como `?` no terminal, mesmo quando o render final esta correto
-
-2. Worktree local suja (nao bloqueia funcionamento, mas pede organizacao):
-- varios arquivos de `screenshots/` marcados como removidos localmente
-- `node_modules/` local presente
-- arquivos locais nao versionados (`debug.log`, `.gitignore` local)
-
-3. Regressao visual:
-- existe captura de evidencias, mas sem pipeline automatizado em CI
-
-## Recomendacao de proxima etapa
-
-1. Consolidar politica de `screenshots` (manter, ignorar ou versionar apenas evidencias finais).
-2. Padronizar encoding em UTF-8 no repo inteiro (dados e comentarios).
-3. Criar checklist de regressao por questao especial (14, 21, 22, 23, 33, 38 etc.).
-4. Se desejado, automatizar validacao visual em script unico de bateria.
-
-## Conclusao
-
-Estamos em um estado bom para continuidade:
-
-- fluxo principal estavel
-- correcoes criticas das questoes visuais aplicadas
-- base oficial pronta para novos ajustes pontuais questao a questao
+Os quatro módulos estão integrados e prontos para publicação. Resíduos locais, dependências e capturas intermediárias permanecem protegidos pelo `.gitignore`.

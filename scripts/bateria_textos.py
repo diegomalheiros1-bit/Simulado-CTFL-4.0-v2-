@@ -24,6 +24,7 @@ MODULES = [
     ("oficial", "Simulado Prova Oficial"),
     ("adicionais", "Questões Adicionais"),
     ("k2k3", "Cálculos K2 & K3"),
+    ("exameB", "Exame B — CTFL 4.0"),
 ]
 
 

@@ -2,6 +2,7 @@
 
 (function createQuizStorage() {
  const STORAGE_KEY = 'ctfl-simulator-progress';
+ const EXAM_B_STORAGE_KEY = 'ctfl_exame_b';
  const CURRENT_VERSION = 1;
  const MAX_ATTEMPTS = 50;
 
@@ -25,9 +26,9 @@
  && typeof attempt.completedAt === 'string';
  }
 
- function loadState() {
+ function loadStateFromKey(key) {
  try {
- const raw = localStorage.getItem(STORAGE_KEY);
+ const raw = localStorage.getItem(key);
  if (!raw) return emptyState();
 
  const parsed = JSON.parse(raw);
@@ -44,9 +45,19 @@
  }
  }
 
- function writeState(state) {
+ function loadState() {
+ const currentState = loadStateFromKey(STORAGE_KEY);
+ const examBState = loadStateFromKey(EXAM_B_STORAGE_KEY);
+ return {
+ version: CURRENT_VERSION,
+ attempts: [...currentState.attempts, ...examBState.attempts]
+ .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime())
+ };
+ }
+
+ function writeState(key, state) {
  try {
- localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+ localStorage.setItem(key, JSON.stringify(state));
  return true;
  } catch (_error) {
  return false;
@@ -61,10 +72,12 @@
  }
 
  function saveAttempt(attempt) {
- const state = loadState();
+ const quizType = String(attempt.quizType);
+ const storageKey = quizType === 'exameB' ? EXAM_B_STORAGE_KEY : STORAGE_KEY;
+ const state = loadStateFromKey(storageKey);
  const record = {
  id: createId(),
- quizType: String(attempt.quizType),
+ quizType,
  quizName: String(attempt.quizName),
  score: Number(attempt.score),
  correct: Number(attempt.correct),
@@ -78,16 +91,19 @@
  }
 
  state.attempts = [record, ...state.attempts].slice(0, MAX_ATTEMPTS);
- writeState(state);
+ writeState(storageKey, state);
  return record;
  }
 
  function clearHistory() {
- return writeState(emptyState());
+ const currentCleared = writeState(STORAGE_KEY, emptyState());
+ const examBCleared = writeState(EXAM_B_STORAGE_KEY, emptyState());
+ return currentCleared && examBCleared;
  }
 
  window.quizStorage = {
  key: STORAGE_KEY,
+ examBKey: EXAM_B_STORAGE_KEY,
  version: CURRENT_VERSION,
  maxAttempts: MAX_ATTEMPTS,
  loadState,

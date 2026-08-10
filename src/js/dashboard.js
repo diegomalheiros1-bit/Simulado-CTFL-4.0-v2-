@@ -14,6 +14,10 @@
  k2k3: {
  name: 'Cálculos K2 & K3',
  accent: 'amber'
+ },
+ exameB: {
+ name: 'Exame B — CTFL 4.0',
+ accent: 'sky'
  }
  };
 

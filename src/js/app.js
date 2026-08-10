@@ -37,6 +37,8 @@ function applyQ38Formatting(questionText, questionNumber) {
   let currentSet = [], idx = 0, score = 0, selected = null, confirmed = false, attempts = [];
  let currentType = null, quizStartedAt = null, resultSaved = false;
  let timerInterval;
+ let timerRemaining = 0;
+ let timerPaused = false;
  // Formata o texto da questão para melhorar a leitura sem alterar conteúdo.
  function decodeMojibake(input) {
  const text = String(input ?? "");
@@ -132,6 +134,61 @@ function escapeHtml(str) {
 .replace(/>/g, "&gt;")
 .replace(/"/g, "&quot;")
 .replace(/'/g, "&#039;");
+ }
+
+ function renderExamBVisual(visual) {
+ if (!visual || typeof visual !== 'object') return '';
+
+ if (visual.type === 'table') {
+ const columns = Array.isArray(visual.columns) ? visual.columns : [];
+ const rows = Array.isArray(visual.rows) ? visual.rows : [];
+ return `
+ <figure class="exam-b-visual" aria-label="${escapeHtml(visual.caption ?? 'Tabela da questão')}">
+ <div class="exam-b-table-wrap">
+ <table class="exam-b-table">
+ <caption>${escapeHtml(visual.caption ?? '')}</caption>
+ <thead><tr>${columns.map(column => `<th scope="col">${escapeHtml(column)}</th>`).join('')}</tr></thead>
+ <tbody>${rows.map(row => `<tr>${row.map((cell, index) => index === 0
+ ? `<th scope="row">${escapeHtml(cell)}</th>`
+ : `<td>${escapeHtml(cell)}</td>`).join('')}</tr>`).join('')}</tbody>
+ </table>
+ </div>
+ </figure>`;
+ }
+
+ if (visual.type === 'image') {
+ return `
+ <figure class="exam-b-visual">
+ <img class="exam-b-diagram" src="${escapeHtml(visual.src ?? '')}" alt="${escapeHtml(visual.alt ?? '')}">
+ </figure>`;
+ }
+
+ if (visual.type === 'code') {
+ return `
+ <figure class="exam-b-visual">
+ <figcaption>${escapeHtml(visual.label ?? 'Trecho apresentado na questão')}</figcaption>
+ <pre class="exam-b-code"><code>${escapeHtml(visual.text ?? '')}</code></pre>
+ </figure>`;
+ }
+
+ if (visual.type === 'scenario') {
+ const lines = Array.isArray(visual.lines) ? visual.lines : [];
+ return `
+ <blockquote class="exam-b-scenario" aria-label="Critérios de aceite">
+ ${lines.map(line => `<p>${escapeHtml(line)}</p>`).join('')}
+ </blockquote>`;
+ }
+
+ return '';
+ }
+
+ function formatExamBQuestionHtml(data) {
+ const parts = String(data.q ?? '').split('[[VISUAL]]');
+ if (parts.length === 1) return formatQuestionHtml(parts[0], data.ch);
+ return parts.map((part, index) => {
+ const textHtml = formatQuestionHtml(part.trim(), data.ch);
+ return index === 0 ? `${textHtml}${renderExamBVisual(data.visual)}` : textHtml;
+ }).join('');
  }
 
  function formatQuestionHtml(raw, tag) {
@@ -679,7 +736,7 @@ function escapeHtml(str) {
  t === "questão 23" || t === "questÃ£o 23" || t === "questao 23" ||
  ((r.includes("diagrama de transição de estado") || r.includes("diagrama de transiÃ§Ã£o de estado")) && r.includes("init") && r.includes("off"));
 
- if (isQ23) {
+ if (isQ23 && !t.includes("exame b")) {
  const text = raw ?? "";
  const lines0 = text.split("\n").map(l => l.replace(/\r/g, ""));
  const lines = lines0.map(l => l.trim()).filter(Boolean);
@@ -901,7 +958,7 @@ function escapeHtml(str) {
  __q22TagFlat.includes("questao 22") ||
  (__q22RawFlat.includes("tabela de decisao") && __q22RawFlat.includes("gerenciamento de relacionamento com o cliente"));
 
- if (__isQ22) {
+ if (__isQ22 && !__q22TagFlat.includes("exame b")) {
  const text = decodeMojibake(raw ?? "");
  const lines = text.split("\n").map(l => l.replace(/\r/g, "").trim()).filter(Boolean);
  const normLine = (l) => __normNoAccent(l);
@@ -1144,6 +1201,7 @@ if (tag === "QuestÃ£o A8 (1 ponto)" || tag === "QuestÃ£o A11 (1 ponto)") {
  let duration = 3600;
  if(type === 'adicionais') duration = 2700;
  if(type === 'k2k3') duration = 2400;
+ if(type === 'exameB') duration = 3600;
 
  document.getElementById('menu').classList.add('hidden');
  document.getElementById('quiz').classList.remove('hidden');
@@ -1157,22 +1215,25 @@ if (tag === "QuestÃ£o A8 (1 ponto)" || tag === "QuestÃ£o A11 (1 ponto)") {
  }
 
  function startTimer(duration) {
- let timer = duration;
+ timerRemaining = duration;
+ timerPaused = false;
  const display = document.getElementById('timer-display');
  const box = document.getElementById('timer-box');
 
  clearInterval(timerInterval);
+ syncTimerToggle();
 
  timerInterval = setInterval(function () {
- let m = parseInt(timer / 60, 10);
- let s = parseInt(timer % 60, 10);
+ if (timerPaused) return;
+ let m = parseInt(timerRemaining / 60, 10);
+ let s = parseInt(timerRemaining % 60, 10);
 
  m = m < 10 ? "0" + m : m;
  s = s < 10 ? "0" + s : s;
 
  display.textContent = m + ":" + s;
 
- if (timer < 300) {
+ if (timerRemaining < 300) {
  display.classList.add('urgent-timer');
  box.classList.replace('border-slate-700', 'border-red-500');
  } else {
@@ -1181,12 +1242,32 @@ if (tag === "QuestÃ£o A8 (1 ponto)" || tag === "QuestÃ£o A11 (1 ponto)") {
  if(!box.classList.contains('border-slate-700')) box.classList.add('border-slate-700');
  }
 
- if (--timer < 0) {
+ if (--timerRemaining < 0) {
  clearInterval(timerInterval);
  alert("Tempo Esgotado! O simulado serÃ¡ encerrado.");
  showResult();
  }
  }, 1000);
+ }
+
+ function syncTimerToggle() {
+ const box = document.getElementById('timer-box');
+ const button = document.getElementById('timer-toggle');
+ if (!box || !button) return;
+ box.classList.toggle('timer-paused', timerPaused);
+ button.setAttribute('aria-pressed', String(timerPaused));
+ button.setAttribute('aria-label', timerPaused ? 'Retomar cronômetro' : 'Pausar cronômetro');
+ button.title = timerPaused ? 'Retomar cronômetro' : 'Pausar cronômetro';
+ button.innerHTML = timerPaused
+ ? '<i data-lucide="play" class="w-4 h-4"></i><span>Retomar</span>'
+ : '<i data-lucide="pause" class="w-4 h-4"></i><span>Pausar</span>';
+ lucide.createIcons();
+ }
+
+ function toggleTimerPause() {
+ if (!currentType || !timerInterval) return;
+ timerPaused = !timerPaused;
+ syncTimerToggle();
  }
 
  // Remove prefixo duplicado das alternativas (ex.: "A.", "B)", "C -", "D:") quando o UI jÃ¡ exibe o selo A/B/C/D.
@@ -1236,7 +1317,9 @@ if (tag === "QuestÃ£o A8 (1 ponto)" || tag === "QuestÃ£o A11 (1 ponto)") {
  document.getElementById('live-idx').innerText = `Quest\u00e3o ${idx + 1} de ${currentSet.length}`;
  document.getElementById('live-score').innerText = score;
  document.getElementById('q-tag').innerText = decodeMojibake(data.ch ?? `Quest\u00e3o ${idx + 1}`);
- document.getElementById('q-text').innerHTML = formatQuestionHtml(questionText, (data.ch ?? `Quest\u00e3o ${idx + 1}`));
+ document.getElementById('q-text').innerHTML = currentType === 'exameB'
+ ? formatExamBQuestionHtml(data)
+ : formatQuestionHtml(questionText, (data.ch ?? `Quest\u00e3o ${idx + 1}`));
  document.getElementById('feedback').classList.add('hidden');
  document.getElementById('next-btn').innerText = "Confirmar Resposta";
  document.getElementById('next-btn').classList.replace('bg-emerald-600', 'bg-indigo-600');
@@ -1324,7 +1407,8 @@ if (tag === "QuestÃ£o A8 (1 ponto)" || tag === "QuestÃ£o A11 (1 ponto)") {
  });
  const _sel = Array.isArray(selected) ? [...selected] : selected;
  const _corr = Array.isArray(corr) ? [...corr] : corr;
- attempts[idx] = { n: idx + 1, tag: _tag, q: _qText, opts: _optsFixed, sel: _sel, corr: _corr };
+ const _reviewText = String(_qText).replace('[[VISUAL]]', '[Elemento visual apresentado na questão]');
+ attempts[idx] = { n: idx + 1, tag: _tag, q: _reviewText, opts: _optsFixed, sel: _sel, corr: _corr };
 
  document.getElementById('f-text').innerText = decodeMojibake(data.f ?? '');
  document.getElementById('feedback').classList.remove('hidden');
@@ -1345,6 +1429,9 @@ if (tag === "QuestÃ£o A8 (1 ponto)" || tag === "QuestÃ£o A11 (1 ponto)") {
 
 function showResult() {
  clearInterval(timerInterval);
+ timerInterval = null;
+ timerPaused = false;
+ syncTimerToggle();
  const pct = Math.round((score/currentSet.length)*100);
 
  // Regra de aprovaÃ§Ã£o
@@ -1356,7 +1443,8 @@ function showResult() {
  const quizNames = {
  oficial: "Prova Oficial",
  adicionais: "Questões Adicionais",
- k2k3: "Cálculos K2 & K3"
+ k2k3: "Cálculos K2 & K3",
+ exameB: "Exame B — CTFL 4.0"
  };
  window.quizStorage.saveAttempt({
  quizType: currentType,
